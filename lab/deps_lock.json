@@ -1,0 +1,55 @@
+{
+  "status": "UNRESOLVED_DO_NOT_BUILD",
+  "upstream_commit": "c3d19abbb4080bb378090d676746751b199b46b1",
+  "dependencies": {
+    "msvc": {
+      "documented_version": "VS2022v17.4.4 reference; exact compiler revision verify",
+      "archive_url": null,
+      "archive_sha256": null,
+      "local_root": null
+    },
+    "windows_sdk": {
+      "documented_version": "10.0 constraint; exact SDK unresolved",
+      "archive_url": null,
+      "archive_sha256": null,
+      "local_root": null
+    },
+    "wxwidgets": {
+      "documented_version": "3.2.1",
+      "archive_url": null,
+      "archive_sha256": null,
+      "local_root": null
+    },
+    "cuda": {
+      "documented_version": "12.0Update1",
+      "archive_url": null,
+      "archive_sha256": null,
+      "local_root": null
+    },
+    "opencv": {
+      "documented_version": "4.7.0",
+      "archive_url": null,
+      "archive_sha256": null,
+      "local_root": null
+    },
+    "cmake_for_opencv": {
+      "documented_version": "3.25.2",
+      "archive_url": null,
+      "archive_sha256": null,
+      "local_root": null
+    },
+    "ffmpeg": {
+      "documented_version": "BtbN shared n5.1 2023-01-24 archive unresolved",
+      "archive_url": null,
+      "archive_sha256": null,
+      "local_root": null
+    }
+  },
+  "environment_variables": {
+    "WX_WIDGETS_PATH": null,
+    "OPENCV_BUILD_PATH_X64": null,
+    "FFMPEG_PATH_X64": null,
+    "CUDA_TOOLKIT_PATH": null,
+    "OPENCV_LIBS_VER": null
+  }
+}
