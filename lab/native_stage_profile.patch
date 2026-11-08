@@ -1,0 +1,193 @@
+diff --git a/Components/FFMPEGVideo/FFMPEGVideo.cpp b/Components/FFMPEGVideo/FFMPEGVideo.cpp
+index 0743806..7b02865 100644
+--- a/Components/FFMPEGVideo/FFMPEGVideo.cpp
++++ b/Components/FFMPEGVideo/FFMPEGVideo.cpp
+@@ -15,6 +15,7 @@
+ //////////////////////////////////////////////////////////////////////////////////
+ 
+ #include "FFMPEGVideo.h"
++#include "StageProfile.h"
+ #include "IPAlgorithms.h"
+ 
+ #ifdef USE_CUDA
+@@ -181,6 +182,7 @@ int FFMPEGVideo::hw_decoder_init(AVCodecContext *ctx, const enum AVHWDeviceType
+ 
+ int FFMPEGVideo::decode_frame(s64 &frame_pos)
+ {
++    vsf_profile::Scope profile_scope(vsf_profile::decode);
+ 	AVFrame* cur_frame = NULL;
+ 	int size;
+ 	int ret = 0;	
+@@ -261,7 +263,7 @@ int FFMPEGVideo::decode_frame(s64 &frame_pos)
+ 	custom_assert(src_fmt == (AVPixelFormat)cur_frame->format, "int FFMPEGVideo::decode_frame(s64 &frame_pos)\nnot: src_fmt == (AVPixelFormat)cur_frame->format");
+ 	custom_assert(m_frame_buffer_size == av_image_get_buffer_size((AVPixelFormat)cur_frame->format, cur_frame->width, cur_frame->height, 1), "int FFMPEGVideo::decode_frame(s64 &frame_pos)\nnot: m_frame_buffer_size == av_image_get_buffer_size((AVPixelFormat)cur_frame->format, cur_frame->width, cur_frame->height, 1)");
+ 
+-	ret = av_image_copy_to_buffer(&m_frame_buffer[0], m_frame_buffer_size, cur_frame->data, cur_frame->linesize, src_fmt, cur_frame->width, cur_frame->height, 1);
++	ret = vsf_profile::measure(vsf_profile::copy_frame, [&]() { return av_image_copy_to_buffer(&m_frame_buffer[0], m_frame_buffer_size, cur_frame->data, cur_frame->linesize, src_fmt, cur_frame->width, cur_frame->height, 1); });
+ 	
+ 	ret = 1;
+ 	
+@@ -274,6 +276,7 @@ int FFMPEGVideo::decode_frame(s64 &frame_pos)
+ 
+ void FFMPEGVideo::OneStep()
+ {
++    vsf_profile::Scope profile_scope(vsf_profile::step);
+ 	m_ImageGeted = false;
+ 
+ 	if (input_ctx)
+@@ -291,7 +294,7 @@ void FFMPEGVideo::OneStep()
+ 				{
+ 					while (need_to_read_packet)
+ 					{
+-						if ((ret = av_read_frame(input_ctx, &packet)) < 0)
++						if ((ret = vsf_profile::measure(vsf_profile::demux, [&]() { return av_read_frame(input_ctx, &packet); })) < 0)
+ 						{
+ 							break;
+ 						}
+@@ -984,7 +987,7 @@ inline int FFMPEGVideo::convert_to_dst_format(u8* frame_data, uint8_t* const dst
+ 		{
+ 			// convert to destination format
+ 
+-			SwsContext* sws_ctx = sws_getContext(
++			SwsContext* sws_ctx = vsf_profile::measure(vsf_profile::sws_init, [&]() { return sws_getContext(
+ 				m_origWidth,
+ 				m_origHeight,
+ 				src_fmt,
+@@ -995,12 +998,12 @@ inline int FFMPEGVideo::convert_to_dst_format(u8* frame_data, uint8_t* const dst
+ 				NULL,
+ 				NULL,
+ 				NULL
+-			);			
++			); });
+ 
+ 
+ 			if (sws_ctx)
+ 			{
+-				ret = sws_scale(sws_ctx, src_data, src_linesize, 0, m_origHeight, dst_data, dst_linesize);
++				ret = vsf_profile::measure(vsf_profile::sws_scale_bin, [&]() { return sws_scale(sws_ctx, src_data, src_linesize, 0, m_origHeight, dst_data, dst_linesize); });
+ 				sws_freeContext(sws_ctx);
+ 			}
+ 		}
+@@ -1013,6 +1016,7 @@ inline int FFMPEGVideo::convert_to_dst_format(u8* frame_data, uint8_t* const dst
+ 
+ int FFMPEGVideo::ConvertToBGR(u8* frame_data, simple_buffer<u8>& ImBGR, int xmin, int xmax, int ymin, int ymax)
+ {
++    vsf_profile::Scope profile_scope(vsf_profile::bgr);
+ 	int ret;
+ 	AVPixelFormat dest_fmt = AV_PIX_FMT_BGR24;
+ 	uint8_t* dst_data[4] = { NULL };
+diff --git a/Components/IPAlgorithms/IPAlgorithms.cpp b/Components/IPAlgorithms/IPAlgorithms.cpp
+index 9ac5b75..222c951 100644
+--- a/Components/IPAlgorithms/IPAlgorithms.cpp
++++ b/Components/IPAlgorithms/IPAlgorithms.cpp
+@@ -15,6 +15,7 @@
+ //////////////////////////////////////////////////////////////////////////////////
+ 
+ #include "IPAlgorithms.h"
++#include "StageProfile.h"
+ #include <math.h>
+ #include <emmintrin.h>
+ #include <wx/wx.h>
+@@ -1795,6 +1796,7 @@ int FilterTransformedImage(simple_buffer<u8>& ImFF, simple_buffer<u8>& ImSF, sim
+ // H - full image include scale (if is) height
+ int GetTransformedImage(simple_buffer<u8>& ImBGR, simple_buffer<u8>& ImFF, simple_buffer<u8>& ImSF, simple_buffer<u8>& ImTF, simple_buffer<u8>& ImNE, simple_buffer<u8>& ImY, int w, int h, int W, int H, int min_x, int max_x)
+ {
++    vsf_profile::Scope profile_scope(vsf_profile::transform);
+ 	simple_buffer<int> LB(h, 0), LE(h, 0);
+ 	int N;
+ 	int res = 0;
+diff --git a/Components/IPAlgorithms/SSAlgorithms.cpp b/Components/IPAlgorithms/SSAlgorithms.cpp
+index 3da9f82..a514196 100644
+--- a/Components/IPAlgorithms/SSAlgorithms.cpp
++++ b/Components/IPAlgorithms/SSAlgorithms.cpp
+@@ -15,6 +15,7 @@
+ //////////////////////////////////////////////////////////////////////////////////
+ 
+ #include "SSAlgorithms.h"
++#include "StageProfile.h"
+ #include <math.h>
+ #include <wx/regex.h>
+ #include <opencv2/core.hpp>
+@@ -607,6 +608,7 @@ public:
+ 		bool convert_to_lab = m_convert_to_lab;
+ 
+ 		m_thrs_save_images.emplace_back(shared_custom_task([ImBGR, ImISA, ImILA, name, w, h, W, H, xmin, xmax, ymin, ymax, convert_to_lab]() mutable {
++                    vsf_profile::Scope profile_save(vsf_profile::save_images);
+ 					{
+ 						simple_buffer<u8> ImTMP_BGR(W * H * 3);
+ 						ImBGRToNativeSize(ImBGR, ImTMP_BGR, w, h, W, H, xmin, xmax, ymin, ymax);
+@@ -1127,6 +1129,7 @@ public:
+ 
+ s64 FastSearchSubtitles(CVideo *pV, s64 Begin, s64 End)
+ {
++    vsf_profile::Scope profile_scope(vsf_profile::search);
+ 	//NOTE: FastSearchSubtitles doesn't use cv:: at all
+ 	// in case of x86 cv::ocl::setUseOpenCL(g_use_ocl) breack ffmpeg cuda usage
+ 	//cv::ocl::setUseOpenCL(g_use_ocl);
+diff --git a/Components/Include/StageProfile.h b/Components/Include/StageProfile.h
+new file mode 100644
+index 0000000..4601969
+--- /dev/null
++++ b/Components/Include/StageProfile.h
+@@ -0,0 +1,42 @@
++#pragma once
++// Lab-only inclusive elapsed counters. Parallel/nested totals MUST NOT be added.
++#include <atomic>
++#include <chrono>
++#include <cstdlib>
++#include <fstream>
++#include <cstdint>
++#include <utility>
++namespace vsf_profile {
++enum Bin { search, step, decode, demux, copy_frame, bgr, sws_init, sws_scale_bin, transform, save_images, count };
++struct Counter { std::atomic<std::uint64_t> calls{0}, ns{0}; };
++inline Counter* counters() { static Counter values[count]; return values; }
++inline const char* destination() { static const char* value = std::getenv("VSF_PROFILE_JSON"); return value; }
++struct Scope {
++    Bin bin; bool active; std::chrono::steady_clock::time_point start;
++    explicit Scope(Bin b): bin(b), active(destination() && *destination()) {
++        if (active) start = std::chrono::steady_clock::now();
++    }
++    ~Scope() noexcept {
++        if (!active) return;
++        const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()-start).count();
++        counters()[bin].calls.fetch_add(1, std::memory_order_relaxed);
++        counters()[bin].ns.fetch_add(static_cast<std::uint64_t>(ns), std::memory_order_relaxed);
++    }
++};
++template<class F> inline auto measure(Bin b, F&& fn) -> decltype(fn()) {
++    Scope timer(b); return std::forward<F>(fn)();
++}
++inline void dump() noexcept {
++    if (!destination() || !*destination()) return;
++    try {
++        std::ofstream stream(destination());
++        const char* names[count] = {"search_inclusive", "decode_step_inclusive", "decode_frame_inclusive", "demux_read", "frame_copy", "bgr_inclusive", "sws_context_create", "sws_scale", "transform_inclusive", "image_save_task_inclusive"};
++        stream << "{\"version\":1,\"semantics\":\"inclusive elapsed; nested and concurrent; not CPU or additive wall time\",\"stages\":[";
++        for (int i=0; i<count; ++i) {
++            if(i) stream << ',';
++            stream << "{\"name\":\"" << names[i] << "\",\"calls\":" << counters()[i].calls.load() << ",\"nanoseconds\":" << counters()[i].ns.load() << '}';
++        }
++        stream << "]}";
++    } catch (...) { /* Profiling must not replace the pipeline's error handling. */ }
++}
++}
+diff --git a/Interfaces/VideoSubFinderWXW/VideoSubFinderWXW.cpp b/Interfaces/VideoSubFinderWXW/VideoSubFinderWXW.cpp
+index ef5a43a..8c9b1eb 100644
+--- a/Interfaces/VideoSubFinderWXW/VideoSubFinderWXW.cpp
++++ b/Interfaces/VideoSubFinderWXW/VideoSubFinderWXW.cpp
+@@ -15,6 +15,7 @@
+ //////////////////////////////////////////////////////////////////////////////////
+ 
+ #include "VideoSubFinderWXW.h"
++#include "StageProfile.h"
+ #include <wx/stdpaths.h>
+ #include <wx/wfstream.h>
+ #include <wx/txtstrm.h>
+@@ -484,5 +485,6 @@ bool CVideoSubFinderApp::OnInit()
+ 
+ CVideoSubFinderApp::~CVideoSubFinderApp()
+ {
++    vsf_profile::dump();
+ }
+ 

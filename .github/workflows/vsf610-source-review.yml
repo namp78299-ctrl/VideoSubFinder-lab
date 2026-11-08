@@ -1,0 +1,28 @@
+name: VSF 6.10 - source review only
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vsf610-source-review-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source-review:
+    if: github.repository == 'namp78299-ctrl/VideoSubFinder-lab'
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - name: Read the selected branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4 tag resolved 2026-11-08
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify upstream source, patch and dependency gaps
+        shell: pwsh
+        run: |
+          python scripts/vsf_lab_preflight.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

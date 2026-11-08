@@ -1,0 +1,173 @@
+{
+  "status": "PINNED_EXPERIMENTAL_RECIPE_NOT_BUILT",
+  "upstream_commit": "c3d19abbb4080bb378090d676746751b199b46b1",
+  "dependencies": {
+    "msvc": {
+      "documented_version": "BuildTools17.4.4 fixed bootstrapper; MSVC14.34 required",
+      "archive_url": "https://download.visualstudio.microsoft.com/download/pr/0502e0d3-64a5-4bb8-b049-6bcbea5ed247/dab763a99d1b50e318c1b5442e08a6eb2b7525be350f1743d36e79eb92c1582f/vs_BuildTools.exe",
+      "archive_sha256": "dab763a99d1b50e318c1b5442e08a6eb2b7525be350f1743d36e79eb92c1582f",
+      "local_root": null,
+      "bytes": 2134728,
+      "hash_provenance": "locally calculated; Authenticode Microsoft Corporation VALID",
+      "installer_product_version": "17.4.4",
+      "required_compiler_prefix": "19.34.",
+      "required_toolset_prefix": "14.34"
+    },
+    "windows_sdk": {
+      "documented_version": "10.0.22000.0 selected for experimental paired builds; historical exact SDK unknown",
+      "archive_url": null,
+      "archive_sha256": null,
+      "local_root": null,
+      "provisioning": {
+        "via": "pinned Microsoft BuildTools installer",
+        "component": "Microsoft.VisualStudio.Component.Windows11SDK.22000"
+      },
+      "validation_status": "PAYLOAD_CATALOG_NOT_YET_VERIFIED_ON_RUNNER"
+    },
+    "wxwidgets": {
+      "documented_version": "3.2.1",
+      "archive_url": "https://github.com/wxWidgets/wxWidgets/releases/download/v3.2.1/wxWidgets-3.2.1.zip",
+      "archive_sha256": "cc8868c3c8ec4eddaf659a8b81589a3d83126d5afde012350f61031a607a56d8",
+      "local_root": null,
+      "bytes": 40084884,
+      "hash_provenance": "locally calculated from official download, not upstream published checksum"
+    },
+    "cuda": {
+      "documented_version": "12.0Update1",
+      "archive_url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_nvcc/windows-x86_64/cuda_nvcc-windows-x86_64-12.0.140-archive.zip",
+      "archive_sha256": "410100486923612c1984e4b4d93b04c9d689f5aca9e93294f1d78e3af745746b",
+      "local_root": null,
+      "components": {
+        "cuda_cccl": {
+          "url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_cccl/windows-x86_64/cuda_cccl-windows-x86_64-12.0.140-archive.zip",
+          "sha256": "4a660ecc7d6651f797279cb5aeeaef90defc33469b2015ef2a15375c7c56aeec",
+          "bytes": 2610906
+        },
+        "cuda_cudart": {
+          "url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_cudart/windows-x86_64/cuda_cudart-windows-x86_64-12.0.146-archive.zip",
+          "sha256": "f40f5ab0d3a566f30d865903f76b504a168a58adc11cf16e0c53f1c2cea4a588",
+          "bytes": 2362874
+        },
+        "cuda_nvcc": {
+          "url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_nvcc/windows-x86_64/cuda_nvcc-windows-x86_64-12.0.140-archive.zip",
+          "sha256": "410100486923612c1984e4b4d93b04c9d689f5aca9e93294f1d78e3af745746b",
+          "bytes": 58942235
+        },
+        "libnpp": {
+          "url": "https://developer.download.nvidia.com/compute/cuda/redist/libnpp/windows-x86_64/libnpp-windows-x86_64-12.0.1.104-archive.zip",
+          "sha256": "59a51d922eb358097a3e22d1293843d2f3c2004979ac687469c6846b01b4375f",
+          "bytes": 152997938
+        },
+        "visual_studio_integration": {
+          "url": "https://developer.download.nvidia.com/compute/cuda/redist/visual_studio_integration/windows-x86_64/visual_studio_integration-windows-x86_64-12.0.140-archive.zip",
+          "sha256": "7e767ba60251d7d4c524b5874121ddc3a5aeccb26cc594fb2e5506dc56131f66",
+          "bytes": 545134
+        }
+      },
+      "manifest_url": "https://developer.download.nvidia.com/compute/cuda/redist/redistrib_12.0.1.json",
+      "manifest_sha256": "14edfe941958212d184fac97890ddd2e5eb05383ff3601e27f37a8514a215fef",
+      "manifest_hash_note": "raw NVIDIA manifest response SHA-256, locally recorded",
+      "hash_provenance": "NVIDIA published component hashes"
+    },
+    "opencv": {
+      "documented_version": "4.7.0",
+      "archive_url": "https://github.com/opencv/opencv/archive/refs/tags/4.7.0.zip",
+      "archive_sha256": "db6fb5e7dc76829d738fdbcdba11a810c66ca0a4752e531eaf3d793361e96de8",
+      "local_root": null,
+      "bytes": 95594055,
+      "hash_provenance": "locally calculated from official download, not upstream published checksum"
+    },
+    "cmake_for_opencv": {
+      "documented_version": "3.25.2",
+      "archive_url": "https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-windows-x86_64.zip",
+      "archive_sha256": "0db9d3cebf894f64751141253fb9d9e310f325e2e03044f61249a359d6adf301",
+      "local_root": null,
+      "bytes": 41464664,
+      "hash_provenance": "publisher SHA-256 file; signature not verified"
+    },
+    "ffmpeg": {
+      "documented_version": "BtbN shared n5.1 2023-01-24 archive unresolved",
+      "archive_url": "https://sourceforge.net/projects/videosubfinder/files/VideoSubFinder_6.10_x64.zip/download",
+      "archive_sha256": "3c0cc03793ec9753a6a4ee8a91c1d226c20b80aab901718f7c97d4fcb3580c0e",
+      "local_root": null,
+      "bytes": 127720699,
+      "hash_provenance": "locally calculated from official URL; not publisher checksum",
+      "headers": {
+        "url": "https://codeload.github.com/FFmpeg/FFmpeg/zip/30d432f205538f6ef6c86ed0a90e27cdd735cd2b",
+        "sha256": "333fcd60bf25b6234278f13232638754aeedaaf77a80d1a91ee07ddca18f9821",
+        "bytes": 19501527,
+        "commit": "30d432f205538f6ef6c86ed0a90e27cdd735cd2b"
+      },
+      "strategy": "EXPERIMENT: derive MSVC import libraries from official VSF DLL exports; exact upstream FFmpeg source headers; generated AMD64 avconfig.h",
+      "sdk_validation_status": "NOT_COMPILED_OR_LINKED",
+      "original_autobuild_url_status": "404 as checked 2026-11-08",
+      "expected_vsf_exe_sha256": "7d8eb55f08f489aad9067c179806b98ac61a77f57272a9e6a688204fdc95abbe",
+      "libraries": {
+        "avcodec": {
+          "dll_sha256": "88ac0b8950c3854dcb19be3601ef00d2ecab67fb7ad54eed424270d2aee28afa",
+          "exports": 260,
+          "data_exports": 1,
+          "import_library_built": false
+        },
+        "avdevice": {
+          "dll_sha256": "c7be22bbbe95c1ee82aa093847045b360ad350ae527b0ae465f77c14200a5c69",
+          "exports": 18,
+          "data_exports": 2,
+          "import_library_built": false
+        },
+        "avfilter": {
+          "dll_sha256": "bea7b10f1541d014a53a0ceb97e6e68e0f308bd23a73b58aca933107de477d26",
+          "exports": 60,
+          "data_exports": 1,
+          "import_library_built": false
+        },
+        "avformat": {
+          "dll_sha256": "3d8585695360d99aaa622db29537085e19926ad59cd8872079c8ba9e61acb465",
+          "exports": 245,
+          "data_exports": 14,
+          "import_library_built": false
+        },
+        "avutil": {
+          "dll_sha256": "9b4e3d32b3fa6a5f0d818091f49baa8f319d99d95a5ec5931b3b3ffc6722b83a",
+          "exports": 580,
+          "data_exports": 13,
+          "import_library_built": false
+        },
+        "swresample": {
+          "dll_sha256": "028443f001d8eebfd2da079fcc7e173951ca58efea9d4bda29bd3549aab7fc76",
+          "exports": 25,
+          "data_exports": 1,
+          "import_library_built": false
+        },
+        "swscale": {
+          "dll_sha256": "bb7171690162312c8fbcb47c6c27237f714108df2f1ad7b3986408bc67e4b93c",
+          "exports": 32,
+          "data_exports": 0,
+          "import_library_built": false
+        }
+      },
+      "official_package_exe_matches_installed": true,
+      "export_validation": {
+        "dlls": 7,
+        "named_addresses_matched_with_windows_loader": 1220,
+        "import_lib_compile": "PENDING",
+        "native_parity": "PENDING"
+      }
+    }
+  },
+  "environment_variables": {
+    "WX_WIDGETS_PATH": null,
+    "OPENCV_BUILD_PATH_X64": null,
+    "FFMPEG_PATH_X64": null,
+    "CUDA_TOOLKIT_PATH": null,
+    "OPENCV_LIBS_VER": null
+  },
+  "build_ready": false,
+  "remaining_gates": [
+    "Microsoft installer payload/SDK and compiler validation on runner",
+    "FFmpeg import-library SDK compile/link/load validation",
+    "Paired native build and original-output parity",
+    "Instrumentation overhead and GPU target audit"
+  ],
+  "provisioning_scope": "GitHub disposable runner only; no local toolchain installation"
+}
