@@ -16,3 +16,7 @@ Hai workflow đồng bộ kế thừa được đổi đuôi thành .yml.disable
 Nếu workflow không xuất hiện ở tab Actions vì chỉ có trên nhánh thử, chưa merge nó vào main chỉ để chạy. Người duy trì sẽ chọn cách dispatch/đưa workflow lên default branch sau khi review và chốt dependency.
 
 Gói review/patch không chứa .env, token, video hoặc runtime DLL của người dùng.
+
+## Experimental recipe added
+
+Pinned downloads and the alternative FFmpeg SDK strategy are documented in BUILD_RECIPE_REVIEW.md. scripts/prepare_vsf_toolchain.ps1 and scripts/build_vsf_pair.ps1 are runner-only. .github/workflows/vsf610-build-pair.yml is a manual-only experimental build recipe. No build or performance result has been claimed.

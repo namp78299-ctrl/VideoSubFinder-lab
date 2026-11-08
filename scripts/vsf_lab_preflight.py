@@ -48,7 +48,8 @@ def inspect(root):
         'tools_on_path': tools,
         'build_ready': False,
         'build_status': 'NOT_ATTEMPTED',
-        'next_gate': 'Resolve dependency archives/hashes and validate exact compiler/SDK/CUDA on runner; then add paired Release x64 build jobs.',
+        'remaining_build_gates': lock.get('remaining_gates', []),
+        'next_gate': 'Validate the reviewed experimental recipe on a disposable runner: compiler/SDK catalog, FFmpeg link/load probe, paired Release x64 builds, then local output parity.',
     }
 
 
