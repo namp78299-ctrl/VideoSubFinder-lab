@@ -109,5 +109,6 @@
     "Settings/Localization/rus/locale.cfg": "e7894caa8bbe82546e43132bd7bc2e645cf42fff008e8844097373d011ff989b",
     "Settings/general.cfg": "40dc10ffb0e805313f858915b1e2c70d46cc62a71869d14d992f6e875f0e3d3d"
   },
-  "profile_patch_sha256": "bb47b4a1f40d3c92c96735a3b3f894c6a12a854a7909f071d0756b8f3711bdc7"
+  "profile_patch_sha256": "bb47b4a1f40d3c92c96735a3b3f894c6a12a854a7909f071d0756b8f3711bdc7",
+  "optimization_patch_sha256": "400bb58438f31cbcf0394da9386f68c28b91de9a0bfff767b1e42543a4ac0c27"
 }

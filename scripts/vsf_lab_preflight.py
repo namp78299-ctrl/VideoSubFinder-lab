@@ -29,6 +29,13 @@ def inspect(root):
                             capture_output=True, text=True)
     if result.returncode:
         issues.append('Patch does not apply: ' + result.stderr.strip())
+    if manifest.get('optimization_patch_sha256'):
+        optimization = root / 'lab/bgr_optimization.patch'
+        if hashlib.sha256(optimization.read_bytes()).hexdigest() != manifest['optimization_patch_sha256']:
+            issues.append('Optimization patch hash mismatch')
+        opt_check = subprocess.run(['git','apply','--check',str(optimization)],cwd=root,capture_output=True,text=True)
+        if opt_check.returncode:
+            issues.append('Optimization patch does not apply: '+opt_check.stderr.strip())
     lock = json.loads((root / 'lab/deps_lock.json').read_text(encoding='utf-8'))
     unresolved = []
     for name, dependency in lock['dependencies'].items():

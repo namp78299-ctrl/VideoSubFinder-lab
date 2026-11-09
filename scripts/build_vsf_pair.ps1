@@ -1,4 +1,4 @@
-param([Parameter(Mandatory=$true)][string]$LabRoot)
+param([Parameter(Mandatory=$true)][string]$LabRoot, [switch]$Optimized)
 $ErrorActionPreference='Stop'
 if ($env:GITHUB_ACTIONS -ne 'true') { throw 'Paired build is restricted to a disposable GitHub runner.' }
 $repo=Split-Path $PSScriptRoot -Parent
@@ -30,7 +30,8 @@ if ($LASTEXITCODE -ne 0) { throw 'FFmpeg header/runtime versions disagree or DLL
 $manifest=Get-Content (Join-Path $repo 'lab/source_manifest.json') -Raw | ConvertFrom-Json
 $diagnostics=Join-Path $LabRoot 'artifacts/diagnostics';New-Item -ItemType Directory -Force $diagnostics | Out-Null
 $results=@()
-foreach ($variant in @('baseline','instrumented')) {
+$variants=if ($Optimized) { @('baseline','optimized') } else { @('baseline','instrumented') }
+foreach ($variant in $variants) {
   $tree=Join-Path $LabRoot $variant
   if (Test-Path -LiteralPath $tree) { throw 'Build source tree already exists; use a new lab root' }
   New-Item -ItemType Directory $tree | Out-Null
@@ -47,6 +48,14 @@ foreach ($variant in @('baseline','instrumented')) {
     & git -C $tree apply (Join-Path $repo 'lab/native_stage_profile.patch')
     if ($LASTEXITCODE -ne 0) { throw 'Instrumentation patch failed' }
   }
+  if ($variant -eq 'optimized') {
+    & git -C $tree init --quiet
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot prepare optimization patch area' }
+    & git -C $tree apply --check (Join-Path $repo 'lab/bgr_optimization.patch')
+    if ($LASTEXITCODE -ne 0) { throw 'Optimization patch does not apply' }
+    & git -C $tree apply (Join-Path $repo 'lab/bgr_optimization.patch')
+    if ($LASTEXITCODE -ne 0) { throw 'Optimization patch failed' }
+  }
   $log=Join-Path $LabRoot ($variant+'-build.log');$binlog=Join-Path $LabRoot ($variant+'-build.binlog')
   & msbuild (Join-Path $tree 'Interfaces/VideoSubFinderWXW/VideoSubFinderWXW.sln') -p:Configuration=Release -p:Platform=x64 "-p:WindowsTargetPlatformVersion=$($state.sdk)" "-p:CudaToolkitCustomDir=$($state.cuda)" -m:2 -v:n ("-bl:"+$binlog) 2>&1 | Tee-Object -FilePath $log
   if ($LASTEXITCODE -ne 0) { throw "$variant build failed; output is not accepted" }
@@ -62,6 +71,7 @@ foreach ($variant in @('baseline','instrumented')) {
   $state | ConvertTo-Json -Depth 6 | Set-Content (Join-Path $package 'build-provenance.json') -Encoding utf8
   Copy-Item -LiteralPath (Join-Path $repo 'lab/deps_lock.json') -Destination $package
   Copy-Item -LiteralPath (Join-Path $repo 'lab/native_stage_profile.patch') -Destination $package
+  if ($Optimized) { Copy-Item -LiteralPath (Join-Path $repo 'lab/bgr_optimization.patch') -Destination $package }
   Copy-Item -LiteralPath (Join-Path $state.ffmpeg 'COPYING.GPLv3') -Destination $package
   $sourceUrl='Source: https://git.code.sf.net/p/videosubfinder/src/ci/c3d19abbb4080bb378090d676746751b199b46b1/tree/ ; FFmpeg headers: https://github.com/FFmpeg/FFmpeg/tree/30d432f205538f6ef6c86ed0a90e27cdd735cd2b ; instrument patch and dependency lock included. Build success does not establish native output parity, GPU compatibility, or speed gain.'
   $sourceUrl | Set-Content (Join-Path $package 'SOURCE-NOTICE.txt') -Encoding utf8
