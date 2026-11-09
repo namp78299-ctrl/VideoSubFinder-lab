@@ -1,0 +1,122 @@
+diff --git a/Components/FFMPEGVideo/FFMPEGVideo.cpp b/Components/FFMPEGVideo/FFMPEGVideo.cpp
+index 0743806..ff1c588 100644
+--- a/Components/FFMPEGVideo/FFMPEGVideo.cpp
++++ b/Components/FFMPEGVideo/FFMPEGVideo.cpp
+@@ -15,6 +15,11 @@
+ //////////////////////////////////////////////////////////////////////////////////
+ 
+ #include "FFMPEGVideo.h"
++#include <array>
++#include <memory>
++#include <mutex>
++#include <new>
++#include <algorithm>
+ #include "IPAlgorithms.h"
+ 
+ #ifdef USE_CUDA
+@@ -1011,8 +1016,105 @@ inline int FFMPEGVideo::convert_to_dst_format(u8* frame_data, uint8_t* const dst
+ 
+ /////////////////////////////////////////////////////////////////////////////
+ 
++
++namespace {
++// Exclusive leases are used instead of thread_local: VSF creates short-lived
++// std::threads, so a TLS context would be discarded between task batches.
++struct BandConversionScratch {
++    SwsContext* context = nullptr;
++    uint8_t* data[4] = {nullptr, nullptr, nullptr, nullptr};
++    int stride[4] = {0, 0, 0, 0};
++    int width = 0, height = 0, bytes = 0;
++    ~BandConversionScratch() { clear(); }
++    void clear() {
++        if (data[0]) av_freep(&data[0]);
++        if (context) sws_freeContext(context);
++        context = nullptr; width = height = bytes = 0;
++    }
++    bool prepare(int w, int h) {
++        if (context && data[0] && width == w && height == h) return true;
++        clear();
++        context = sws_getContext(w, h, AV_PIX_FMT_YUV420P, w, h,
++            AV_PIX_FMT_BGR24, SWS_BILINEAR, nullptr, nullptr, nullptr);
++        if (!context) return false;
++        bytes = av_image_alloc(data, stride, w, h, AV_PIX_FMT_BGR24, 1);
++        if (bytes <= 0) { clear(); return false; }
++        width = w; height = h;
++        return true;
++    }
++};
++struct BandConversionPool {
++    std::mutex mutex;
++    std::array<std::unique_ptr<BandConversionScratch>, 4> idle;
++};
++BandConversionPool& band_conversion_pool() {
++    static BandConversionPool pool;
++    return pool;
++}
++struct BandConversionLease {
++    std::unique_ptr<BandConversionScratch> value;
++    BandConversionLease() {
++        auto& pool = band_conversion_pool();
++        {
++            std::lock_guard<std::mutex> guard(pool.mutex);
++            for (auto& slot : pool.idle) {
++                if (slot) { value = std::move(slot); break; }
++            }
++        }
++        if (!value) value.reset(new (std::nothrow) BandConversionScratch());
++    }
++    ~BandConversionLease() {
++        // Bound retained scratch memory to four buffers of at most 4 MiB.
++        // Oversized buffers remain lease-local and are freed after this call.
++        if (!value || value->bytes > 4 * 1024 * 1024) return;
++        auto& pool = band_conversion_pool();
++        std::lock_guard<std::mutex> guard(pool.mutex);
++        for (auto& slot : pool.idle) {
++            if (!slot) { slot = std::move(value); break; }
++        }
++    }
++};
++bool convert_yuv420_band(u8* frame_data, simple_buffer<u8>& image,
++    AVPixelFormat format, int orig_width, int orig_height, int width, int height,
++    int xmin, int xmax, int ymin, int ymax) {
++    // Leave NV12/CUDA, other formats, scaling and invalid geometry untouched.
++    if (!frame_data || format != AV_PIX_FMT_YUV420P || width != orig_width ||
++        height != orig_height || width <= 0 || height <= 0 || (width & 1) ||
++        (height & 1) || xmin < 0 || ymin < 0 || xmax < xmin || ymax < ymin ||
++        xmax >= width || ymax >= height) return false;
++    const int w = xmax - xmin + 1, h = ymax - ymin + 1;
++    if (image.m_size < static_cast<s64>(w) * h * 3) return false;
++    // Only the conversion buffer is cropped. All video dimensions, ROI fields,
++    // thresholds and saved metadata still use the original full frame.
++    const int top = (std::max<int>(0, ymin - 32) / 2) * 2;
++    const int bottom = std::min<int>(height, ((ymax + 34) / 2) * 2);
++    const int band_height = bottom - top;
++    if (band_height <= 0 || band_height >= height) return false;
++    uint8_t* source[4] = {nullptr, nullptr, nullptr, nullptr};
++    int source_stride[4] = {0, 0, 0, 0};
++    if (av_image_fill_arrays(source, source_stride, frame_data, format,
++        orig_width, orig_height, 1) < 0) return false;
++    source[0] += top * source_stride[0];
++    source[1] += (top / 2) * source_stride[1];
++    source[2] += (top / 2) * source_stride[2];
++    BandConversionLease lease;
++    if (!lease.value || !lease.value->prepare(width, band_height)) return false;
++    auto& scratch = *lease.value;
++    if (sws_scale(scratch.context, source, source_stride, 0, band_height,
++        scratch.data, scratch.stride) != band_height) return false;
++    for (int row = 0; row < h; ++row) {
++        image.copy_data(scratch.data[0], row * w * 3,
++            (ymin - top + row) * scratch.stride[0] + xmin * 3, w * 3);
++    }
++    UpdateImageColor(image, w, h);
++    return true;
++}
++} // namespace
++
+ int FFMPEGVideo::ConvertToBGR(u8* frame_data, simple_buffer<u8>& ImBGR, int xmin, int xmax, int ymin, int ymax)
+ {
++    if (convert_yuv420_band(frame_data, ImBGR, src_fmt, m_origWidth, m_origHeight,
++        m_Width, m_Height, xmin, xmax, ymin, ymax)) return m_Height;
+ 	int ret;
+ 	AVPixelFormat dest_fmt = AV_PIX_FMT_BGR24;
+ 	uint8_t* dst_data[4] = { NULL };

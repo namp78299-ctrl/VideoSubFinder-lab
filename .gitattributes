@@ -1,2 +1,3 @@
 lab/native_stage_profile.patch -text
 .github/workflows/*.disabled -text
+lab/bgr_optimization.patch -text

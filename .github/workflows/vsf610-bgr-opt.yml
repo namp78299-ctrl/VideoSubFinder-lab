@@ -1,0 +1,55 @@
+# Experimental lab-only build, manually dispatched. Does not integrate with DuanLayLink.
+name: VSF 6.10 - BGR optimization experiment
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vsf610-bgr-opt-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-pair:
+    if: github.repository == 'namp78299-ctrl/VideoSubFinder-lab'
+    runs-on: windows-2022
+    timeout-minutes: 180
+    steps:
+      - name: Read selected lab branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Verify original source and instrumentation patch
+        shell: pwsh
+        run: |
+          python scripts/vsf_lab_preflight.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Provision locked experimental compiler and dependencies on runner
+        shell: pwsh
+        run: |
+          $lab = Join-Path $env:RUNNER_TEMP "vsf610-${{ github.run_id }}-${{ github.run_attempt }}"
+          ./scripts/prepare_vsf_toolchain.ps1 -LabRoot $lab
+      - name: Compile and validate both Release x64 variants
+        shell: pwsh
+        run: |
+          $lab = Join-Path $env:RUNNER_TEMP "vsf610-${{ github.run_id }}-${{ github.run_attempt }}"
+          ./scripts/build_vsf_pair.ps1 -LabRoot $lab -Optimized
+      - name: Save successful binaries and whitelisted diagnostics for local parity audit
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: vsf610-bgr-opt-pair-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/vsf610-${{ github.run_id }}-${{ github.run_attempt }}/artifacts/baseline.zip
+            ${{ runner.temp }}/vsf610-${{ github.run_id }}-${{ github.run_attempt }}/artifacts/optimized.zip
+            ${{ runner.temp }}/vsf610-${{ github.run_id }}-${{ github.run_attempt }}/artifacts/diagnostics/*.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: State the actual scope
+        if: always()
+        shell: pwsh
+        run: |
+          "## Experimental build only" >> $env:GITHUB_STEP_SUMMARY
+          "A successful compile does not establish output parity, GTX1050Ti compatibility, or any speed gain. Run the local video audit before integration." >> $env:GITHUB_STEP_SUMMARY
